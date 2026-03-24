@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaIQ — Campus Water Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #050c14;
+    --surface: #0a1628;
+    --surface2: #0f1f38;
+    --surface3: #162844;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --accent3: #ff6b35;
+    --accent4: #ffd166;
+    --danger: #ff4757;
+    --text: #e8f4fd;
+    --text2: #7fa8cc;
+    --text3: #4a7a9b;
+    --border: rgba(0,212,255,0.12);
+    --glow: 0 0 20px rgba(0,212,255,0.15);
+    --glow2: 0 0 30px rgba(0,255,157,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Ambient glow orbs */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+    animation: drift 15s ease-in-out infinite alternate;
+  }
+
+  @keyframes drift {
+    from { transform: translate(0, 0); }
+    to { transform: translate(100px, 150px); }
+  }
+
+  .container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    background: rgba(5,12,20,0.95);
+    backdrop-filter: blur(20px);
+    position: sticky; top: 0; z-index: 100;
+    padding: 0 24px;
+  }
+
+  .header-inner {
+    max-width: 1400px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+
+  .logo {
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: var(--glow);
+    animation: pulse-logo 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-logo {
+    0%, 100% { box-shadow: 0 0 15px rgba(0,212,255,0.3); }
+    50% { box-shadow: 0 0 30px rgba(0,212,255,0.6), 0 0 60px rgba(0,255,157,0.2); }
+  }
+
+  .logo-text { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo-text span { color: var(--accent); }
+
+  .logo-sub { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 2px; }
+
+  .header-meta { display: flex; align-items: center; gap: 20px; }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(0,255,157,0.1); border: 1px solid rgba(0,255,157,0.3);
+    border-radius: 20px; padding: 6px 14px;
+    font-family: 'Space Mono', monospace; font-size: 11px; color: var(--accent2);
+  }
+
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent2);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .date-pill {
+    font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text3);
+  }
+
+  /* MAIN LAYOUT */
+  main { padding: 32px 0; display: flex; flex-direction: column; gap: 28px; }
+
+  /* KPI STRIP */
+  .kpi-strip {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: default;
+  }
+
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(0,212,255,0.3);
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-accent, var(--accent));
+  }
+
+  .kpi-label { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+
+  .kpi-value { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+
+  .kpi-delta {
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  .kpi-delta.up { color: var(--accent2); }
+  .kpi-delta.down { color: var(--danger); }
+  .kpi-delta.neutral { color: var(--text3); }
+
+  .kpi-icon { position: absolute; top: 16px; right: 16px; font-size: 22px; opacity: 0.3; }
+
+  /* MAIN GRID */
+  .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .main-grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+  .full-width { grid-column: 1 / -1; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .card-title { font-size: 14px; font-weight: 700; letter-spacing: 0.3px; }
+  .card-sub { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+  .card-body { padding: 20px 24px; }
+
+  .badge {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    padding: 4px 10px; border-radius: 4px;
+    letter-spacing: 1px;
+  }
+
+  .badge-blue { background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.2); }
+  .badge-green { background: rgba(0,255,157,0.1); color: var(--accent2); border: 1px solid rgba(0,255,157,0.2); }
+  .badge-orange { background: rgba(255,107,53,0.1); color: var(--accent3); border: 1px solid rgba(255,107,53,0.2); }
+  .badge-yellow { background: rgba(255,209,102,0.1); color: var(--accent4); border: 1px solid rgba(255,209,102,0.2); }
+
+  /* CHART CONTAINERS */
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* FORECAST TABLE */
+  .forecast-table { width: 100%; border-collapse: collapse; }
+
+  .forecast-table th {
+    font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 1px;
+    padding: 10px 12px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .forecast-table td {
+    padding: 12px 12px; font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .forecast-table tr:hover td { background: rgba(0,212,255,0.03); }
+  .forecast-table tr:last-child td { border-bottom: none; }
+
+  /* DEMAND BAR */
+  .demand-bar-wrap { display: flex; align-items: center; gap: 10px; }
+  .demand-bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .demand-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .demand-bar-val { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text2); min-width: 60px; text-align: right; }
+
+  /* PUMP SCHEDULE */
+  .pump-grid { display: flex; flex-direction: column; gap: 12px; }
+
+  .pump-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+
+  .pump-row:hover { border-color: var(--border); }
+
+  .pump-name { font-size: 13px; font-weight: 600; min-width: 120px; }
+  .pump-time { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--accent4); }
+  .pump-kwh { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text3); margin-left: auto; }
+
+  .pump-status {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .pump-status.active { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); animation: blink 2s infinite; }
+  .pump-status.scheduled { background: var(--accent4); }
+  .pump-status.off { background: var(--text3); }
+
+  .timeline-bar {
+    flex: 1; height: 8px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px; overflow: hidden;
+    position: relative;
+  }
+
+  .timeline-fill {
+    position: absolute; top: 0; height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  /* TANK STATUS */
+  .tank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .tank-card {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tank-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+  .tank-location { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text3); margin-bottom: 14px; }
+
+  .tank-visual {
+    width: 100%; height: 70px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .tank-fill-anim {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    border-radius: 0 0 7px 7px;
+    transition: height 2s ease;
+  }
+
+  .tank-wave {
+    position: absolute;
+    top: -4px; left: -10px; right: -10px;
+    height: 12px;
+    background: inherit;
+    border-radius: 50%;
+    animation: wave 3s ease-in-out infinite;
+  }
+
+  @keyframes wave {
+    0%, 100% { transform: translateX(-5px) scaleY(1); }
+    50% { transform: translateX(5px) scaleY(0.8); }
+  }
+
+  .tank-pct { font-size: 22px; font-weight: 800; }
+  .tank-vol { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text3); }
+
+  /* ALERT STRIP */
+  .alert-strip {
+    background: rgba(255,107,53,0.08);
+    border: 1px solid rgba(255,107,53,0.25);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .alert-strip:last-child { margin-bottom: 0; }
+  .alert-strip.info { background: rgba(0,212,255,0.06); border-color: rgba(0,212,255,0.2); }
+  .alert-strip.success { background: rgba(0,255,157,0.06); border-color: rgba(0,255,157,0.2); }
+
+  .alert-icon { font-size: 16px; flex-shrink: 0; }
+  .alert-text { line-height: 1.5; }
+  .alert-text strong { font-weight: 700; }
+  .alert-text span { color: var(--text2); font-size: 12px; }
+
+  /* MODEL METRICS */
+  .metrics-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  .metric-box {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+
+  .metric-val { font-size: 24px; font-weight: 800; color: var(--accent); }
+  .metric-label { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text3); margin-top: 4px; }
+
+  /* WEATHER ROW */
+  .weather-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+
+  .weather-day {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align: center;
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
+  }
+
+  .weather-day:hover { border-color: rgba(0,212,255,0.3); }
+  .weather-day.today { border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
+
+  .wd-name { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text3); margin-bottom: 8px; }
+  .wd-icon { font-size: 22px; margin-bottom: 8px; }
+  .wd-temp { font-size: 15px; font-weight: 700; }
+  .wd-rain { font-family: 'Space Mono', monospace; font-size: 10px; color: #7ec8e3; margin-top: 4px; }
+
+  /* SECTION LABELS */
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; color: var(--text3);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .section-label::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  /* SAVINGS COUNTER */
+  .savings-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
+  }
+
+  .savings-box {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .savings-box::before {
+    content: '';
+    position: absolute;
+    bottom: -20px; right: -20px;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: var(--save-color, rgba(0,212,255,0.06));
+  }
+
+  .savings-number { font-size: 32px; font-weight: 800; color: var(--save-text, var(--accent)); }
+  .savings-unit { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .savings-desc { font-size: 12px; color: var(--text2); margin-top: 6px; }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 20px 24px;
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+  /* ANIMATIONS */
+  .fade-in { animation: fadeIn 0.6s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .stagger > * { opacity: 0; animation: fadeIn 0.5s ease forwards; }
+  .stagger > *:nth-child(1) { animation-delay: 0.05s; }
+  .stagger > *:nth-child(2) { animation-delay: 0.1s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.15s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.2s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.25s; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: 8px; padding: 4px; }
+
+  .tab {
+    flex: 1; padding: 8px 14px; border-radius: 6px; border: none;
+    background: transparent; color: var(--text3);
+    font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+
+  .tab.active {
+    background: var(--surface3);
+    color: var(--accent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* Model info box */
+  .model-box {
+    background: rgba(0,212,255,0.04);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 10px;
+    padding: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    color: var(--text2);
+  }
+
+  .model-box strong { color: var(--accent); }
+
+  @media (max-width: 1100px) {
+    .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+    .main-grid { grid-template-columns: 1fr; }
+    .main-grid-3 { grid-template-columns: 1fr; }
+    .weather-row { grid-template-columns: repeat(4, 1fr); }
+    .tank-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+
+  /* ── PUMP TOGGLE SWITCH ─────────────────────────────── */
+  .pump-toggle-wrap { display:flex; align-items:center; gap:8px; margin-left:auto; }
+  .toggle-switch { position:relative; width:44px; height:24px; cursor:pointer; flex-shrink:0; }
+  .toggle-switch input { opacity:0; width:0; height:0; }
+  .toggle-track {
+    position:absolute; inset:0; background:rgba(255,255,255,0.1);
+    border-radius:12px; border:1px solid rgba(255,255,255,0.15); transition:all 0.3s;
+  }
+  .toggle-track::after {
+    content:''; position:absolute; top:3px; left:3px;
+    width:16px; height:16px; border-radius:50%;
+    background:var(--text3); transition:all 0.3s;
+  }
+  .toggle-switch input:checked + .toggle-track { background:rgba(0,255,157,0.2); border-color:var(--accent2); box-shadow:0 0 10px rgba(0,255,157,0.3); }
+  .toggle-switch input:checked + .toggle-track::after { transform:translateX(20px); background:var(--accent2); }
+  .pump-override-badge { font-family:'Space Mono',monospace; font-size:9px; padding:2px 6px; border-radius:3px; letter-spacing:1px; font-weight:700; white-space:nowrap; }
+  .badge-on   { background:rgba(0,255,157,0.15); color:var(--accent2); border:1px solid rgba(0,255,157,0.3); }
+  .badge-off  { background:rgba(255,71,87,0.15);  color:var(--danger);  border:1px solid rgba(255,71,87,0.3); }
+  .badge-auto { background:rgba(0,212,255,0.1);   color:var(--text3);   border:1px solid var(--border); }
+  .pump-kwh-live { font-family:'Space Mono',monospace; font-size:11px; color:var(--text3); transition:color 0.4s; }
+  .pump-kwh-live.running { color:var(--accent2); }
+
+  /* ── POWER DISPLAY ──────────────────────────────────── */
+  .power-display { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
+  .power-label { font-family:'Space Mono',monospace; font-size:10px; color:var(--text3); }
+  .power-val { font-size:22px; font-weight:800; color:var(--accent4); transition:color 0.4s; }
+  .power-val.high { color:var(--danger); }
+  .power-sub { font-family:'Space Mono',monospace; font-size:10px; color:var(--text3); margin-top:2px; }
+  .tariff-pill { font-family:'Space Mono',monospace; font-size:10px; padding:4px 10px; border-radius:5px; }
+  .tariff-peak     { background:rgba(255,71,87,0.15);  color:var(--danger);  border:1px solid rgba(255,71,87,0.3); }
+  .tariff-standard { background:rgba(255,209,102,0.1); color:var(--accent4); border:1px solid rgba(255,209,102,0.2); }
+  .tariff-offpeak  { background:rgba(0,255,157,0.1);   color:var(--accent2); border:1px solid rgba(0,255,157,0.2); }
+
+  /* ── TANK SLIDER ────────────────────────────────────── */
+  .tank-slider-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .tank-slider { -webkit-appearance:none; appearance:none; flex:1; height:4px; border-radius:2px; outline:none; cursor:pointer; background:rgba(255,255,255,0.08); }
+  .tank-slider::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--accent); cursor:pointer; box-shadow:0 0 6px rgba(0,212,255,0.5); transition:transform 0.15s; }
+  .tank-slider::-webkit-slider-thumb:hover { transform:scale(1.3); }
+  .tank-slider.warn-slider::-webkit-slider-thumb { background:var(--accent4); box-shadow:0 0 6px rgba(255,209,102,0.5); }
+  .tank-slider.crit-slider::-webkit-slider-thumb { background:var(--danger); box-shadow:0 0 6px rgba(255,71,87,0.5); }
+  .tank-pct-live { font-size:20px; font-weight:800; transition:color 0.3s; }
+  .tank-vol-live { font-family:'Space Mono',monospace; font-size:10px; color:var(--text3); }
+  .tank-inline-alert { font-family:'Space Mono',monospace; font-size:10px; padding:5px 8px; border-radius:5px; margin-top:6px; display:none; }
+  .tank-inline-alert.show { display:block; }
+  .tank-inline-alert.warn { background:rgba(255,209,102,0.1); color:var(--accent4); border:1px solid rgba(255,209,102,0.3); }
+  .tank-inline-alert.crit { background:rgba(255,71,87,0.1); color:var(--danger); border:1px solid rgba(255,71,87,0.3); }
+  .tank-avg-kpi { transition:color 0.4s; }
+
+  /* ── TOAST NOTIFICATIONS ────────────────────────────── */
+  #toast-container { position:fixed; bottom:28px; right:28px; display:flex; flex-direction:column; gap:10px; z-index:9999; pointer-events:none; }
+  .toast { display:flex; align-items:flex-start; gap:12px; padding:14px 18px; background:var(--surface2); border-radius:10px; border-left:3px solid var(--accent); box-shadow:0 4px 24px rgba(0,0,0,0.5); font-size:13px; min-width:290px; max-width:340px; animation:toastIn 0.3s ease, toastOut 0.4s ease 3.6s forwards; pointer-events:all; }
+  .toast.success { border-color:var(--accent2); }
+  .toast.warn    { border-color:var(--accent4); }
+  .toast.danger  { border-color:var(--danger); }
+  .toast-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+  .toast-title { font-weight:700; font-size:13px; margin-bottom:2px; }
+  .toast-body  { font-size:11px; color:var(--text2); font-family:'Space Mono',monospace; line-height:1.5; }
+  @keyframes toastIn  { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateX(20px); } }
+
+  /* ── CTRL HEADER ────────────────────────────────────── */
+  .ctrl-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .ctrl-label { font-family:'Space Mono',monospace; font-size:10px; color:var(--text3); letter-spacing:2px; text-transform:uppercase; }
+  .reset-btn { font-family:'Space Mono',monospace; font-size:10px; background:rgba(255,71,87,0.08); border:1px solid rgba(255,71,87,0.25); color:var(--danger); border-radius:4px; padding:3px 10px; cursor:pointer; transition:all 0.2s; }
+  .reset-btn:hover { background:rgba(255,71,87,0.18); }
+
+  @media (max-width: 1100px) {
+    .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+    .main-grid { grid-template-columns: 1fr; }
+    .main-grid-3 { grid-template-columns: 1fr; }
+    .weather-row { grid-template-columns: repeat(4, 1fr); }
+    .tank-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">💧</div>
+      <div>
+        <div class="logo-text">Aqua<span>IQ</span></div>
+        <div class="logo-sub">Campus Water Intelligence System</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        ML MODEL ACTIVE
+      </div>
+      <div class="date-pill" id="live-date">MON, 09 MAR 2026 · 14:32:07</div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+<main>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip stagger" id="kpi-strip">
+
+    <div class="kpi-card" style="--card-accent: var(--accent)">
+      <div class="kpi-icon">💧</div>
+      <div class="kpi-label">Today's Forecast</div>
+      <div class="kpi-value" style="color: var(--accent)"><span id="kpi-today">1,847</span></div>
+      <div class="kpi-delta up">↑ kL · 94.2% confidence</div>
+    </div>
+
+    <div class="kpi-card" style="--card-accent: var(--accent2)">
+      <div class="kpi-icon">⚡</div>
+      <div class="kpi-label">Pump Energy Saved</div>
+      <div class="kpi-value" style="color: var(--accent2)"><span id="kpi-saved">342</span></div>
+      <div class="kpi-delta up">↑ kWh this week · +12%</div>
+    </div>
+
+    <div class="kpi-card" style="--card-accent: var(--accent3)">
+      <div class="kpi-icon">🏗️</div>
+      <div class="kpi-label">Zones Active</div>
+      <div class="kpi-value" style="color: var(--accent3)">6/8</div>
+      <div class="kpi-delta neutral">● 2 zones on standby</div>
+    </div>
+
+    <div class="kpi-card" style="--card-accent: var(--accent4)">
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-label">Model Accuracy</div>
+      <div class="kpi-value" style="color: var(--accent4)">96.4%</div>
+      <div class="kpi-delta up">↑ MAPE 3.6% · XGBoost</div>
+    </div>
+
+    <div class="kpi-card" style="--card-accent: #aa55ff">
+      <div class="kpi-icon">🌡️</div>
+      <div class="kpi-label">Avg Tank Level</div>
+      <div class="kpi-value" style="color: #aa55ff">68%</div>
+      <div class="kpi-delta down">↓ 5% from yesterday</div>
+    </div>
+
+  </div>
+
+  <!-- WEATHER ROW -->
+  <div class="card fade-in">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Weather Forecast · Impact on Demand</div>
+        <div class="card-sub">Higher temp → higher demand. Rain → reduced irrigation load.</div>
+      </div>
+      <span class="badge badge-blue">7-DAY</span>
+    </div>
+    <div class="card-body">
+      <div class="weather-row" id="weather-row"></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div class="main-grid">
+
+    <!-- FORECAST CHART -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Water Demand Forecast — Next 7 Days</div>
+          <div class="card-sub">XGBoost prediction vs. baseline & historical avg</div>
+        </div>
+        <div class="tabs" id="forecast-tabs">
+          <button class="tab active" onclick="switchTab(this,'daily')">Daily</button>
+          <button class="tab" onclick="switchTab(this,'hourly')">Hourly</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:240px">
+          <canvas id="forecastChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORICAL USAGE -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Historical Consumption Pattern</div>
+          <div class="card-sub">Last 30 days by zone type</div>
+        </div>
+        <span class="badge badge-green">STACKED</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:240px">
+          <canvas id="historicalChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PUMP + TANKS ROW -->
+  <div class="main-grid-3">
+
+    <!-- PUMP SCHEDULE — INTERACTIVE -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">⚙️ Pump Control Panel</div>
+          <div class="card-sub">Toggle pumps ON/OFF · Live energy tracking</div>
+        </div>
+        <span class="badge badge-yellow" id="pump-badge">TODAY</span>
+      </div>
+      <div class="card-body">
+        <div class="ctrl-row">
+          <div class="ctrl-label">Manual Override</div>
+          <button class="reset-btn" onclick="resetAllPumps()">↺ Reset All to Auto</button>
+        </div>
+        <div class="pump-grid" id="pump-grid"></div>
+        <div class="power-display">
+          <div>
+            <div class="power-label">TOTAL ACTIVE LOAD</div>
+            <div class="power-val" id="total-power">0 kW</div>
+            <div class="power-sub" id="cost-rate">₹0.00 / hr</div>
+          </div>
+          <div style="text-align:right">
+            <div class="power-label" style="margin-bottom:6px">TARIFF WINDOW</div>
+            <span class="tariff-pill" id="tariff-display">STANDARD</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TANK STATUS — INTERACTIVE -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🏗️ Tank Level Control</div>
+          <div class="card-sub">Drag sliders to update · Auto-alerts on low levels</div>
+        </div>
+        <span class="badge badge-blue">LIVE</span>
+      </div>
+      <div class="card-body">
+        <div class="ctrl-row">
+          <div class="ctrl-label">Drag to Adjust</div>
+          <button class="reset-btn" onclick="resetTanks()">↺ Reset</button>
+        </div>
+        <div class="tank-grid" id="tank-grid"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ZONE DEMAND + ALERTS -->
+  <div class="main-grid">
+
+    <!-- ZONE BREAKDOWN -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Zone-wise Demand Forecast (Tomorrow)</div>
+          <div class="card-sub">Predicted kL by campus zone</div>
+        </div>
+        <span class="badge badge-blue">NEXT 24H</span>
+      </div>
+      <div class="card-body">
+        <table class="forecast-table" id="zone-table"></table>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Smart Alerts & Recommendations</div>
+          <div class="card-sub">AI-generated action items</div>
+        </div>
+        <span class="badge badge-orange" id="alert-badge">3 ALERTS</span>
+      </div>
+      <div class="card-body" id="alerts-body"></div>
+    </div>
+
+  </div>
+
+  <!-- MODEL INFO + SAVINGS -->
+  <div class="main-grid">
+
+    <!-- MODEL -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">ML Model Performance</div>
+          <div class="card-sub">XGBoost + LSTM ensemble on 2-year training data</div>
+        </div>
+        <span class="badge badge-green">v2.4</span>
+      </div>
+      <div class="card-body">
+        <div class="metrics-row" style="margin-bottom:18px">
+          <div class="metric-box">
+            <div class="metric-val">99.1%</div>
+            <div class="metric-label">ACCURACY</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val" style="color:var(--accent2)">0.9%</div>
+            <div class="metric-label">MAPE</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val" style="color:var(--accent4)">5.9</div>
+            <div class="metric-label">RMSE (kL)</div>
+          </div>
+        </div>
+        <div class="chart-wrap" style="height:150px">
+          <canvas id="accuracyChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAVINGS -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Impact Metrics · Pilot Month</div>
+          <div class="card-sub">Projected savings from optimised scheduling</div>
+        </div>
+        <span class="badge badge-green">IMPACT</span>
+      </div>
+      <div class="card-body">
+        <div class="savings-row">
+          <div class="savings-box" style="--save-color: rgba(0,212,255,0.08); --save-text: var(--accent)">
+            <div class="savings-unit">kWh SAVED</div>
+            <div class="savings-number" id="cnt-kwh">0</div>
+            <div class="savings-desc">Reduced over-pumping energy</div>
+          </div>
+          <div class="savings-box" style="--save-color: rgba(0,255,157,0.08); --save-text: var(--accent2)">
+            <div class="savings-unit">kL OPTIMISED</div>
+            <div class="savings-number" id="cnt-kl" style="color:var(--accent2)">0</div>
+            <div class="savings-desc">Better tank distribution</div>
+          </div>
+          <div class="savings-box" style="--save-color: rgba(255,209,102,0.08); --save-text: var(--accent4)">
+            <div class="savings-unit">₹ SAVED</div>
+            <div class="savings-number" id="cnt-rs" style="color:var(--accent4)">0</div>
+            <div class="savings-desc">Electricity cost reduction</div>
+          </div>
+        </div>
+        <div style="margin-top:18px">
+          <div class="model-box">
+            <strong>Features used:</strong> Hour-of-day · Day-of-week · Occupancy · Temp · Rainfall · Holiday flag · Previous-day usage · Event calendar<br><br>
+            <strong>Training:</strong> 24 months · 8 campus zones · 15-min intervals<br>
+            <strong>Retrains:</strong> Weekly on new data · Drift detection active
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<footer>
+  AquaIQ v2.4 · XGBoost + LSTM Ensemble · Campus Water Intelligence System · Avadi, Tamil Nadu
+</footer>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════════
+
+const weatherData = [
+  { day:'FRI', icon:'☀️', temp:'34°', rain:'Dry', today:true },
+  { day:'SAT', icon:'⛅', temp:'32°', rain:'2mm', today:false },
+  { day:'SUN', icon:'☀️', temp:'33°', rain:'Dry', today:false },
+  { day:'MON', icon:'🌧️', temp:'28°', rain:'15mm', today:false },
+  { day:'TUE', icon:'🌧️', temp:'27°', rain:'22mm', today:false },
+  { day:'WED', icon:'⛅', temp:'30°', rain:'5mm', today:false },
+  { day:'THU', icon:'☀️', temp:'35°', rain:'Dry', today:false },
+];
+
+const forecastDemand = [1847, 1720, 1900, 1580, 1510, 1650, 1980];
+const baselineDemand = [1900, 1900, 1900, 1900, 1900, 1900, 1900];
+const historicalAvg  = [1780, 1760, 1800, 1750, 1820, 1880, 1950];
+
+// Pump state: isOn = current override state, autoOn = AI schedule recommendation
+const pumpState = [
+  { id:0, name:'Main Booster',  time:'05:00–07:30', pct:[0.208,0.313], power:11, isOn:false, autoOn:false, tariff:'offpeak' },
+  { id:1, name:'Hostel Block A',time:'06:00–08:00', pct:[0.25, 0.333], power:7,  isOn:true,  autoOn:true,  tariff:'offpeak' },
+  { id:2, name:'Academic Zone', time:'07:30–09:30', pct:[0.313,0.396], power:5,  isOn:true,  autoOn:true,  tariff:'standard' },
+  { id:3, name:'Canteen Supply',time:'10:00–11:30', pct:[0.417,0.479], power:3,  isOn:false, autoOn:false, tariff:'peak' },
+  { id:4, name:'Garden/Grounds',time:'18:00–19:30', pct:[0.75, 0.813], power:4,  isOn:false, autoOn:false, tariff:'standard' },
+  { id:5, name:'Hostel Block B', time:'21:00–22:30', pct:[0.875,0.938], power:7,  isOn:false, autoOn:false, tariff:'offpeak' },
+];
+
+// Tank state: live pct value
+const tankState = [
+  { id:0, name:'OHT - Hostel A', location:'Block A Roof', pct:72, cap:150, color:'#00d4ff' },
+  { id:1, name:'OHT - Hostel B', location:'Block B Roof', pct:55, cap:150, color:'#00ff9d' },
+  { id:2, name:'UGT - Academic', location:'Main Block',   pct:81, cap:200, color:'#aa55ff' },
+  { id:3, name:'OHT - Canteen',  location:'Dining Zone',  pct:48, cap:80,  color:'#ffd166' },
+];
+const tankDefaults = tankState.map(t => t.pct); // save originals for reset
+
+const zoneData = [
+  { zone:'Hostel Block A', demand:520, prev:490, color:'#00d4ff' },
+  { zone:'Hostel Block B', demand:480, prev:510, color:'#00ff9d' },
+  { zone:'Academic Block', demand:320, prev:300, color:'#aa55ff' },
+  { zone:'Canteen & Mess', demand:180, prev:185, color:'#ffd166' },
+  { zone:'Gardens & Lawn', demand:220, prev:310, color:'#7ec8e3' },
+  { zone:'Admin & Labs',   demand:127, prev:130, color:'#ff6b35' },
+];
+
+let dynamicAlerts = [
+  { type:'warn',    icon:'⚠️', title:'Tank Canteen OHT at 48%',    body:'Scheduled fill at 10:00. Manual top-up advisable by 09:30.' },
+  { type:'info',    icon:'💡', title:'Rain forecast Monday',        body:'Garden demand predicted -40%. Pump schedule auto-adjusted. Est. saving: 8 kWh.' },
+  { type:'success', icon:'✅', title:'Optimal pump window tonight', body:'Off-peak tariff 21:00–22:30. All non-urgent fills redirected. Saves ₹380.' },
+];
+
+// ════════════════════════════════════════════════════════════
+// TOAST SYSTEM
+// ════════════════════════════════════════════════════════════
+
+function showToast(type, title, body) {
+  const icons = { success:'✅', warn:'⚠️', danger:'🚨', info:'💡' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `
+    <div class="toast-icon">${icons[type]||'💬'}</div>
+    <div>
+      <div class="toast-title">${title}</div>
+      <div class="toast-body">${body}</div>
+    </div>`;
+  const container = document.getElementById('toast-container');
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 4200);
+}
+
+// ════════════════════════════════════════════════════════════
+// PUMP CONTROLS
+// ════════════════════════════════════════════════════════════
+
+function getTariffInfo() {
+  const h = new Date().getHours();
+  if ((h >= 9 && h < 12) || (h >= 18 && h < 22)) return { tier:'peak',     rate:9.5,  label:'PEAK TARIFF',     cls:'tariff-peak' };
+  if (h >= 22 || h < 6)                           return { tier:'offpeak',  rate:4.8,  label:'OFF-PEAK',        cls:'tariff-offpeak' };
+  return                                                  { tier:'standard', rate:7.2,  label:'STANDARD TARIFF', cls:'tariff-standard' };
+}
+
+function renderPumps() {
+  const el  = document.getElementById('pump-grid');
+  const now = (new Date().getHours() + new Date().getMinutes()/60) / 24;
+
+  el.innerHTML = pumpState.map(p => {
+    const [s, e] = p.pct;
+    const left   = s * 100, width = (e - s) * 100;
+    const isNow  = now >= s && now <= e;
+    const done   = now > e;
+    const modeLabel = p.isOn
+      ? `<span class="pump-override-badge badge-on">ON</span>`
+      : `<span class="pump-override-badge badge-off">OFF</span>`;
+    const kwhEl = `<span class="pump-kwh-live ${p.isOn ? 'running' : ''}" id="pkwh-${p.id}">${p.isOn ? p.power + ' kW' : '—'}</span>`;
+
+    return `
+      <div class="pump-row" id="pump-row-${p.id}" style="${p.isOn ? 'border-color:rgba(0,255,157,0.2);background:rgba(0,255,157,0.04)' : ''}">
+        <div class="pump-status ${p.isOn ? 'active' : (done ? 'off' : 'scheduled')}"></div>
+        <div class="pump-name">${p.name}</div>
+        <div class="pump-time">${p.time}</div>
+        <div class="timeline-bar">
+          <div class="timeline-fill" style="left:${left}%;width:${width}%;opacity:${done?0.3:1};background:${p.isOn?'linear-gradient(90deg,var(--accent2),var(--accent))':'linear-gradient(90deg,var(--accent),var(--accent2))'}"></div>
+          ${isNow ? `<div style="position:absolute;top:0;bottom:0;left:${now*100}%;width:2px;background:#fff;opacity:0.5"></div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          ${kwhEl}
+          ${modeLabel}
+          <label class="toggle-switch" title="Toggle pump ${p.name}">
+            <input type="checkbox" ${p.isOn ? 'checked' : ''} onchange="togglePump(${p.id}, this.checked)">
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>`;
+  }).join('');
+
+  updatePowerDisplay();
+}
+
+function togglePump(id, on) {
+  const p = pumpState[id];
+  p.isOn = on;
+  const tariff = getTariffInfo();
+
+  if (on) {
+    if (tariff.tier === 'peak') {
+      showToast('warn', `${p.name} turned ON`, `⚠ Peak tariff active! Running at ₹${tariff.rate}/kWh. Consider off-peak window instead.`);
+    } else {
+      showToast('success', `${p.name} activated`, `Running at ${p.power} kW · ${tariff.label} · ₹${tariff.rate}/kWh`);
+    }
+    // Add alert if peak
+    if (tariff.tier === 'peak') {
+      dynamicAlerts.unshift({ type:'warn', icon:'⚡', title:`${p.name} running on Peak Tariff`, body:`Cost: ₹${(p.power * tariff.rate).toFixed(2)}/hr. Switch to off-peak to save.` });
+      renderAlerts();
+    }
+  } else {
+    const savedKwh = (p.power * 0.5).toFixed(1);
+    showToast('info', `${p.name} turned OFF`, `Estimated saving: ${savedKwh} kWh this slot`);
+  }
+
+  renderPumps();
+  updateKpiPumps();
+}
+
+function resetAllPumps() {
+  pumpState.forEach(p => { p.isOn = p.autoOn; });
+  renderPumps();
+  updateKpiPumps();
+  showToast('info', 'Pumps reset to AI schedule', 'All manual overrides cleared');
+}
+
+function updatePowerDisplay() {
+  const tariff = getTariffInfo();
+  const totalKw = pumpState.filter(p => p.isOn).reduce((s,p) => s + p.power, 0);
+  const costPerHr = (totalKw * tariff.rate).toFixed(2);
+
+  const powerEl = document.getElementById('total-power');
+  const costEl  = document.getElementById('cost-rate');
+  const tariffEl= document.getElementById('tariff-display');
+
+  if (powerEl) {
+    powerEl.textContent = totalKw + ' kW';
+    powerEl.className = 'power-val' + (totalKw > 25 ? ' high' : '');
+  }
+  if (costEl)   costEl.textContent = `₹${costPerHr} / hr`;
+  if (tariffEl) { tariffEl.textContent = tariff.label; tariffEl.className = `tariff-pill ${tariff.cls}`; }
+}
+
+function updateKpiPumps() {
+  const active = pumpState.filter(p => p.isOn).length;
+  const kpiVal = document.querySelector('[style*="--card-accent: var(--accent3)"] .kpi-value');
+  const kpiDelta = document.querySelector('[style*="--card-accent: var(--accent3)"] .kpi-delta');
+  if (kpiVal) kpiVal.innerHTML = `<span style="color:var(--accent3)">${active}/${pumpState.length}</span>`;
+  if (kpiDelta) kpiDelta.textContent = `● ${active} running now`;
+}
+
+// ════════════════════════════════════════════════════════════
+// TANK CONTROLS
+// ════════════════════════════════════════════════════════════
+
+function renderTanks() {
+  const el = document.getElementById('tank-grid');
+  el.innerHTML = tankState.map(t => {
+    const pct = t.pct;
+    const col = pct < 30 ? '#ff4757' : pct < 50 ? '#ffd166' : t.color;
+    const vol = Math.round(t.cap * pct / 100);
+    const sliderCls = pct < 30 ? 'crit-slider' : pct < 50 ? 'warn-slider' : '';
+    const alertCls = pct < 30 ? 'crit' : pct < 50 ? 'warn' : '';
+    const alertMsg = pct < 30
+      ? `🚨 CRITICAL — Pump activation required immediately!`
+      : pct < 50
+      ? `⚠ LOW — Schedule fill in next off-peak window`
+      : '';
+
+    return `
+      <div class="tank-card" id="tank-card-${t.id}">
+        <div class="tank-name">${t.name}</div>
+        <div class="tank-location">${t.location} · ${t.cap}kL cap</div>
+        <div class="tank-visual">
+          <div class="tank-fill-anim" id="tank-fill-${t.id}" style="height:${pct}%;background:linear-gradient(180deg,${col}88,${col}44);">
+            <div class="tank-wave" style="background:${col}55"></div>
+          </div>
+        </div>
+        <div class="tank-pct-live" id="tank-pct-${t.id}" style="color:${col}">${pct}%</div>
+        <div class="tank-vol-live" id="tank-vol-${t.id}">${vol} / ${t.cap} kL</div>
+        <div class="tank-slider-row">
+          <input type="range" min="0" max="100" value="${pct}"
+            class="tank-slider ${sliderCls}" id="slider-${t.id}"
+            oninput="updateTank(${t.id}, this.value)">
+        </div>
+        <div class="tank-inline-alert ${alertCls} ${alertMsg ? 'show' : ''}" id="tank-alert-${t.id}">
+          ${alertMsg}
+        </div>
+      </div>`;
+  }).join('');
+
+  updateKpiTanks();
+}
+
+function updateTank(id, val) {
+  const t = tankState[id];
+  const pct = parseInt(val);
+  const prevPct = t.pct;
+  t.pct = pct;
+
+  const col = pct < 30 ? '#ff4757' : pct < 50 ? '#ffd166' : t.color;
+  const vol = Math.round(t.cap * pct / 100);
+
+  // Update visuals
+  const fillEl   = document.getElementById(`tank-fill-${id}`);
+  const pctEl    = document.getElementById(`tank-pct-${id}`);
+  const volEl    = document.getElementById(`tank-vol-${id}`);
+  const alertEl  = document.getElementById(`tank-alert-${id}`);
+  const sliderEl = document.getElementById(`slider-${id}`);
+  const cardEl   = document.getElementById(`tank-card-${id}`);
+
+  if (fillEl) { fillEl.style.height = pct + '%'; fillEl.style.background = `linear-gradient(180deg,${col}88,${col}44)`; }
+  if (pctEl)  { pctEl.textContent = pct + '%'; pctEl.style.color = col; }
+  if (volEl)  volEl.textContent = `${vol} / ${t.cap} kL`;
+  if (sliderEl) sliderEl.className = `tank-slider ${pct < 30 ? 'crit-slider' : pct < 50 ? 'warn-slider' : ''}`;
+  if (cardEl) cardEl.style.borderColor = pct < 30 ? 'rgba(255,71,87,0.4)' : pct < 50 ? 'rgba(255,209,102,0.3)' : 'var(--border)';
+
+  // Alert logic
+  if (pct < 30 && prevPct >= 30) {
+    alertEl.className = 'tank-inline-alert crit show';
+    alertEl.textContent = '🚨 CRITICAL — Pump activation required immediately!';
+    showToast('danger', `${t.name} CRITICAL`, `Level at ${pct}% — only ${vol}kL remaining. Activate pump now!`);
+    dynamicAlerts.unshift({ type:'danger', icon:'🚨', title:`${t.name} at ${pct}% — CRITICAL`, body:`Only ${vol}kL remaining. Immediate pump activation required.` });
+    renderAlerts();
+  } else if (pct < 50 && prevPct >= 50) {
+    alertEl.className = 'tank-inline-alert warn show';
+    alertEl.textContent = '⚠ LOW — Schedule fill in next off-peak window';
+    showToast('warn', `${t.name} running low`, `Level dropped to ${pct}%. Schedule fill before next peak demand.`);
+    dynamicAlerts.unshift({ type:'warn', icon:'⚠️', title:`${t.name} at ${pct}% — Low`, body:`Schedule fill in the next off-peak window (21:00–05:00).` });
+    renderAlerts();
+  } else if (pct >= 50) {
+    alertEl.className = 'tank-inline-alert';
+    alertEl.textContent = '';
+    // Remove related alert if tank now OK
+    dynamicAlerts = dynamicAlerts.filter(a => !a.title.includes(t.name) || !a.title.includes('CRITICAL') && !a.title.includes('Low'));
+    renderAlerts();
+  }
+
+  if (pct >= 95 && prevPct < 95) {
+    showToast('success', `${t.name} nearly full`, `${pct}% — ${vol}kL. Consider stopping fill pump.`);
+  }
+
+  updateKpiTanks();
+}
+
+function resetTanks() {
+  tankState.forEach((t, i) => { t.pct = tankDefaults[i]; });
+  renderTanks();
+  showToast('info', 'Tank levels reset', 'All tanks restored to original readings');
+}
+
+function updateKpiTanks() {
+  const avg = Math.round(tankState.reduce((s,t) => s + t.pct, 0) / tankState.length);
+  const kpiEl = document.querySelector('[style*="--card-accent: #aa55ff"] .kpi-value');
+  const deltaEl = document.querySelector('[style*="--card-accent: #aa55ff"] .kpi-delta');
+  if (kpiEl) kpiEl.innerHTML = `<span style="color:#aa55ff" class="tank-avg-kpi">${avg}%</span>`;
+  const low = tankState.filter(t => t.pct < 50).length;
+  if (deltaEl) {
+    deltaEl.textContent = low > 0 ? `↓ ${low} tank${low>1?'s':''} need attention` : '↑ All tanks healthy';
+    deltaEl.className = `kpi-delta ${low > 0 ? 'down' : 'up'}`;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// WEATHER, ZONES, ALERTS, CHARTS
+// ════════════════════════════════════════════════════════════
+
+function renderWeather() {
+  document.getElementById('weather-row').innerHTML = weatherData.map(d => `
+    <div class="weather-day ${d.today ? 'today' : ''}">
+      <div class="wd-name">${d.day}</div>
+      <div class="wd-icon">${d.icon}</div>
+      <div class="wd-temp">${d.temp}</div>
+      <div class="wd-rain">${d.rain}</div>
+    </div>`).join('');
+}
+
+function renderZones() {
+  const el = document.getElementById('zone-table');
+  el.innerHTML = `
+    <thead><tr>
+      <th>Zone</th><th>Forecast (kL)</th><th>vs Yesterday</th><th>Demand Level</th>
+    </tr></thead>
+    <tbody>
+      ${zoneData.map(z => {
+        const delta = z.demand - z.prev;
+        const pct   = Math.round(z.demand / 18.47);
+        const dStr  = delta > 0
+          ? `<span style="color:var(--accent3)">+${delta}</span>`
+          : `<span style="color:var(--accent2)">${delta}</span>`;
+        return `<tr>
+          <td style="font-weight:600"><span style="color:${z.color}">▪</span> ${z.zone}</td>
+          <td style="font-family:'Space Mono',monospace">${z.demand}</td>
+          <td style="font-family:'Space Mono',monospace">${dStr}</td>
+          <td>
+            <div class="demand-bar-wrap">
+              <div class="demand-bar-bg">
+                <div class="demand-bar-fill" style="width:${pct}%;background:linear-gradient(90deg,${z.color}88,${z.color})"></div>
+              </div>
+              <div class="demand-bar-val">${pct}%</div>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody>`;
+}
+
+function renderAlerts() {
+  const el = document.getElementById('alerts-body');
+  const badge = document.getElementById('alert-badge');
+  if (badge) badge.textContent = `${dynamicAlerts.length} ALERTS`;
+  el.innerHTML = dynamicAlerts.map(a => `
+    <div class="alert-strip ${a.type==='info'?'info':a.type==='success'?'success':''}">
+      <div class="alert-icon">${a.icon}</div>
+      <div class="alert-text">
+        <strong>${a.title}</strong><br>
+        <span>${a.body}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════════════════════════
+
+const chartDefaults = {
+  plugins: { legend: { labels: { color:'#7fa8cc', font:{ family:'Space Mono', size:10 }, boxWidth:10 } } },
+  scales: {
+    x: { grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'#4a7a9b', font:{ family:'Space Mono', size:10 } } },
+    y: { grid:{ color:'rgba(255,255,255,0.04)' }, ticks:{ color:'#4a7a9b', font:{ family:'Space Mono', size:10 } } }
+  },
+  animation: { duration:1200, easing:'easeInOutQuart' }
+};
+
+const days = ['Fri','Sat','Sun','Mon','Tue','Wed','Thu'];
+
+let forecastChart = new Chart(document.getElementById('forecastChart'), {
+  type: 'line',
+  data: {
+    labels: days,
+    datasets: [
+      { label:'AI Forecast', data:forecastDemand, borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.08)', fill:true, tension:0.4, borderWidth:2.5, pointBackgroundColor:'#00d4ff', pointRadius:4, pointHoverRadius:7 },
+      { label:'Baseline',    data:baselineDemand, borderColor:'rgba(255,107,53,0.5)', borderDash:[6,4], fill:false, tension:0, borderWidth:1.5, pointRadius:0 },
+      { label:'Hist. Avg',   data:historicalAvg,  borderColor:'rgba(255,255,255,0.15)', borderDash:[3,3], fill:false, tension:0.3, borderWidth:1, pointRadius:0 }
+    ]
+  },
+  options: { ...chartDefaults, responsive:true, maintainAspectRatio:false }
+});
+
+const months30 = Array.from({length:30},(_,i) => { const d = new Date(2026,2,20); d.setDate(d.getDate()-29+i); return `${d.getDate()}/${d.getMonth()+1}`; });
+
+new Chart(document.getElementById('historicalChart'), {
+  type: 'bar',
+  data: {
+    labels: months30,
+    datasets: [
+      { label:'Hostels',   data:months30.map(()=>500+Math.random()*200), backgroundColor:'rgba(0,212,255,0.55)', stack:'s' },
+      { label:'Academic',  data:months30.map(()=>250+Math.random()*100), backgroundColor:'rgba(170,85,255,0.55)', stack:'s' },
+      { label:'Canteen',   data:months30.map(()=>150+Math.random()*60),  backgroundColor:'rgba(255,209,102,0.55)', stack:'s' },
+      { label:'Gardens',   data:months30.map(()=>180+Math.random()*120), backgroundColor:'rgba(0,255,157,0.45)', stack:'s' },
+    ]
+  },
+  options: { ...chartDefaults, responsive:true, maintainAspectRatio:false,
+    scales: {
+      x: { ...chartDefaults.scales.x, stacked:true, ticks:{ ...chartDefaults.scales.x.ticks, maxRotation:0, autoSkip:true, maxTicksLimit:8 } },
+      y: { ...chartDefaults.scales.y, stacked:true }
+    }
+  }
+});
+
+const accDays = Array.from({length:14},(_,i)=>`D-${13-i}`);
+const predicted = accDays.map(()=>1600+Math.random()*400);
+const actual    = predicted.map(v=>v*(0.93+Math.random()*0.14));
+
+new Chart(document.getElementById('accuracyChart'), {
+  type: 'line',
+  data: {
+    labels: accDays,
+    datasets: [
+      { label:'Predicted', data:predicted, borderColor:'#00d4ff', fill:false, tension:0.4, borderWidth:2, pointRadius:2 },
+      { label:'Actual',    data:actual,    borderColor:'#00ff9d', fill:false, tension:0.4, borderWidth:2, pointRadius:2, borderDash:[4,3] }
+    ]
+  },
+  options: { ...chartDefaults, responsive:true, maintainAspectRatio:false }
+});
+
+// ════════════════════════════════════════════════════════════
+// TAB SWITCH
+// ════════════════════════════════════════════════════════════
+
+const hourlyData = [0,0,0,0,8,18,38,52,42,28,18,20,24,22,19,21,30,38,26,18,12,8,4,0].map(v => v + Math.random()*3);
+
+function switchTab(btn, mode) {
+  document.querySelectorAll('#forecast-tabs .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  if (mode === 'hourly') {
+    forecastChart.data.labels = Array.from({length:24},(_,i)=>`${String(i).padStart(2,'0')}:00`);
+    forecastChart.data.datasets[0].data = hourlyData;
+    forecastChart.data.datasets[0].label = 'Hourly Forecast (kL/hr)';
+    forecastChart.data.datasets[1].data = hourlyData.map(()=>21);
+    forecastChart.data.datasets[2].data = hourlyData.map(v=>v*0.92);
+  } else {
+    forecastChart.data.labels = days;
+    forecastChart.data.datasets[0].data = forecastDemand;
+    forecastChart.data.datasets[0].label = 'AI Forecast';
+    forecastChart.data.datasets[1].data = baselineDemand;
+    forecastChart.data.datasets[2].data = historicalAvg;
+  }
+  forecastChart.update();
+}
+
+// ════════════════════════════════════════════════════════════
+// COUNTER + CLOCK
+// ════════════════════════════════════════════════════════════
+
+function animateCounter(id, target) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  let v = 0; const step = target / 60;
+  const t = setInterval(()=>{ v = Math.min(v+step, target); el.textContent = Math.floor(v).toLocaleString('en-IN'); if(v>=target) clearInterval(t); }, 25);
+}
+
+function updateClock() {
+  const now = new Date();
+  const D = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const M = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const p = v => String(v).padStart(2,'0');
+  document.getElementById('live-date').textContent =
+    `${D[now.getDay()]}, ${p(now.getDate())} ${M[now.getMonth()]} ${now.getFullYear()} · ${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+}
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+
+renderWeather();
+renderPumps();
+renderTanks();
+renderZones();
+renderAlerts();
+
+setTimeout(()=>{
+  animateCounter('cnt-kwh', 1284);
+  animateCounter('cnt-kl',  8420);
+  animateCounter('cnt-rs',  9640);
+}, 600);
+
+updateClock();
+setInterval(updateClock, 1000);
+setInterval(updatePowerDisplay, 30000); // refresh tariff display every 30s
+
+// Welcome toast
+setTimeout(() => showToast('info', 'AquaIQ Interactive Mode', 'Toggle pumps ON/OFF · Drag tank sliders to simulate levels'), 1000);
+</script>
+</body>
+</html>

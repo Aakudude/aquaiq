@@ -1,0 +1,140 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_sub %}Live overview · Campus water intelligence{% endblock %}
+
+{% block content %}
+
+<!-- KPI STRIP -->
+<div class="kpi-grid" id="kpi-grid">
+  <div class="kpi-card" style="--accent: var(--blue)">
+    <div class="kpi-accent"></div>
+    <div class="kpi-label">Today's Forecast</div>
+    <div class="kpi-value" style="color:var(--blue)" id="kv-today">—</div>
+    <div class="kpi-sub" id="ks-today">Loading…</div>
+    <div class="kpi-icon">💧</div>
+  </div>
+  <div class="kpi-card" style="--accent: var(--green)">
+    <div class="kpi-accent"></div>
+    <div class="kpi-label">Energy Saved · Month</div>
+    <div class="kpi-value" style="color:var(--green)" id="kv-kwh">1,284</div>
+    <div class="kpi-sub up">↑ kWh · AI scheduling</div>
+    <div class="kpi-icon">⚡</div>
+  </div>
+  <div class="kpi-card" style="--accent: var(--amber)">
+    <div class="kpi-accent"></div>
+    <div class="kpi-label">Cost Saved · Month</div>
+    <div class="kpi-value" style="color:var(--amber)">₹9,640</div>
+    <div class="kpi-sub up">↑ vs unoptimised schedule</div>
+    <div class="kpi-icon">💰</div>
+  </div>
+  <div class="kpi-card" style="--accent: var(--purple)">
+    <div class="kpi-accent"></div>
+    <div class="kpi-label">Model Accuracy</div>
+    <div class="kpi-value" style="color:var(--purple)">99.1%</div>
+    <div class="kpi-sub up">MAPE 0.9% · RMSE 5.9kL</div>
+    <div class="kpi-icon">🎯</div>
+  </div>
+  <div class="kpi-card" style="--accent: var(--cyan)">
+    <div class="kpi-accent"></div>
+    <div class="kpi-label">Avg Tank Level</div>
+    <div class="kpi-value" style="color:var(--cyan)" id="kv-tank">—</div>
+    <div class="kpi-sub" id="ks-tank">Loading…</div>
+    <div class="kpi-icon">🏗️</div>
+  </div>
+</div>
+
+<!-- WEATHER + SUMMARY FORECAST -->
+<div class="row-21">
+
+  <!-- WEATHER -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">7-Day Weather · Demand Impact</div>
+        <div class="card-sub">+1°C → +0.8% demand &nbsp;·&nbsp; Rain day → −12% irrigation</div>
+      </div>
+      <span class="badge b-blue">LIVE</span>
+    </div>
+    <div class="card-body">
+      <div class="weather-strip" id="weather-strip">
+        <!-- populated by dashboard.js -->
+        <div class="skeleton-row">
+          {% for _ in range(7) %}<div class="skeleton wx-skel"></div>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERTS SUMMARY -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Smart Alerts</div>
+        <div class="card-sub">AI-generated recommendations</div>
+      </div>
+      <span class="badge b-red" id="alert-count">—</span>
+    </div>
+    <div class="card-body" id="alert-list">
+      <div class="loading-state">Loading alerts…</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MINI CHARTS ROW -->
+<div class="row-2">
+
+  <!-- FORECAST PREVIEW -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">7-Day Demand Forecast</div>
+        <div class="card-sub">XGBoost · confidence bands shown</div>
+      </div>
+      <a href="{{ url_for('forecast') }}" class="card-link">Full forecast →</a>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="miniforecastChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZONE MINI -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Zone Demand · Today</div>
+        <div class="card-sub">Predicted kL per campus zone</div>
+      </div>
+      <a href="{{ url_for('zones') }}" class="card-link">All zones →</a>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="zoneDonutChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- AI REASONING STRIP -->
+<div class="card">
+  <div class="card-head">
+    <div>
+      <div class="card-title">🧠 Why the model predicted this · Feature impact</div>
+      <div class="card-sub">SHAP-style explainability — top demand drivers for today</div>
+    </div>
+    <span class="badge b-purple">SHAP</span>
+  </div>
+  <div class="card-body">
+    <div class="reason-grid" id="reason-grid"></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,50 @@
+{
+  "daily_features": [
+    "day_of_week",
+    "month",
+    "is_weekend",
+    "is_holiday",
+    "temp_mean",
+    "temp_max",
+    "rainfall_mm",
+    "occupancy_mean",
+    "prev_day_kl",
+    "rolling7_kl",
+    "day_of_week_sin",
+    "day_of_week_cos",
+    "month_sin",
+    "month_cos"
+  ],
+  "hourly_features": [
+    "hour",
+    "day_of_week",
+    "month",
+    "is_weekend",
+    "is_holiday",
+    "temperature_c",
+    "rainfall_mm",
+    "occupancy_pct",
+    "prev_hr_kl",
+    "prev24_kl",
+    "hour_sin",
+    "hour_cos",
+    "day_of_week_sin",
+    "day_of_week_cos",
+    "month_sin",
+    "month_cos"
+  ],
+  "daily_stats": {
+    "mean": 532.7022421340629,
+    "std": 81.87365177075985,
+    "min": 377.614,
+    "max": 638.513
+  },
+  "report": {
+    "daily_mape": 0.9,
+    "daily_rmse": 5.9,
+    "daily_acc": 99.1,
+    "hourly_mape": 3.25,
+    "hourly_rmse": 0.89,
+    "hourly_acc": 96.7
+  }
+}

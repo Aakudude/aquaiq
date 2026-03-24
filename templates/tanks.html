@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+{% block title %}Tank Monitor{% endblock %}
+{% block page_title %}Tank Level Monitor{% endblock %}
+{% block page_sub %}Real-time simulation · Drag sliders · Auto-alerts on critical levels{% endblock %}
+
+{% block content %}
+
+<!-- TANK SUMMARY BAR -->
+<div class="summary-bar" id="tank-summary-bar">
+  <div class="sb-item">
+    <div class="sb-label">Avg Fill Level</div>
+    <div class="sb-val" id="avg-fill" style="color:var(--blue)">—</div>
+  </div>
+  <div class="sb-divider"></div>
+  <div class="sb-item">
+    <div class="sb-label">Total Stored</div>
+    <div class="sb-val" id="total-stored" style="color:var(--cyan)">—</div>
+    <div class="sb-unit">kL</div>
+  </div>
+  <div class="sb-divider"></div>
+  <div class="sb-item">
+    <div class="sb-label">Total Capacity</div>
+    <div class="sb-val" style="color:var(--text2)">580</div>
+    <div class="sb-unit">kL</div>
+  </div>
+  <div class="sb-divider"></div>
+  <div class="sb-item">
+    <div class="sb-label">Tanks Low (&lt;50%)</div>
+    <div class="sb-val" id="tanks-low" style="color:var(--amber)">—</div>
+  </div>
+  <div class="sb-divider"></div>
+  <div class="sb-item">
+    <div class="sb-label">Tanks Critical (&lt;30%)</div>
+    <div class="sb-val" id="tanks-crit" style="color:var(--red)">—</div>
+  </div>
+  <div class="sb-actions">
+    <button class="btn-ghost" onclick="resetTanks()">↺ Reset to sensor readings</button>
+  </div>
+</div>
+
+<!-- TANK CARDS GRID -->
+<div class="tank-cards-grid" id="tank-cards-grid">
+  <div class="loading-state" style="grid-column:1/-1">Loading tank data…</div>
+</div>
+
+<!-- TANK FILL OVERVIEW CHART -->
+<div class="row-2">
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Tank Level Overview</div>
+        <div class="card-sub">Current fill % vs capacity · All tanks</div>
+      </div>
+      <span class="badge b-cyan">LIVE</span>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap" style="height:200px">
+        <canvas id="tankBarChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Tank Depletion Forecast</div>
+        <div class="card-sub">Estimated hours until refill needed · at current demand</div>
+      </div>
+      <span class="badge b-amber">PREDICTIVE</span>
+    </div>
+    <div class="card-body">
+      <div id="depletion-list" class="depletion-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TANK ALERTS -->
+<div class="card">
+  <div class="card-head">
+    <div>
+      <div class="card-title">Tank Alerts & AI Filling Schedule</div>
+      <div class="card-sub">Auto-generated · updates as levels change</div>
+    </div>
+    <span class="badge b-red" id="tank-alert-count">0</span>
+  </div>
+  <div class="card-body">
+    <div class="alert-list" id="tank-alert-list">
+      <div class="empty-state">No alerts — all tanks nominal</div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/tanks.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "layout.html" %}
+{% block title %}Pump Control{% endblock %}
+{% block page_title %}Pump Control Panel{% endblock %}
+{% block page_sub %}Manual overrides · AI schedule · Tariff-aware energy tracking{% endblock %}
+
+{% block content %}
+
+<!-- TARIFF INFO BAR -->
+<div class="info-bar" id="tariff-bar">
+  <div class="ib-left">
+    <span class="ib-icon">⚡</span>
+    <div>
+      <div class="ib-title" id="ib-tariff-title">Current Tariff Window</div>
+      <div class="ib-sub" id="ib-tariff-sub">Loading…</div>
+    </div>
+  </div>
+  <div class="ib-right">
+    <div class="tariff-rates">
+      <span class="tr-item offpeak">Off-Peak <strong>₹4.8/kWh</strong> <em>22:00–06:00</em></span>
+      <span class="tr-item std">Standard <strong>₹7.2/kWh</strong> <em>06:00–09:00, 12:00–18:00</em></span>
+      <span class="tr-item peak">Peak <strong>₹9.5/kWh</strong> <em>09:00–12:00, 18:00–22:00</em></span>
+    </div>
+  </div>
+</div>
+
+<!-- PUMP STATS + CONTROLS -->
+<div class="row-21">
+
+  <!-- PUMP LIST -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Pump Schedule — Manual Control</div>
+        <div class="card-sub">Toggle ON/OFF · AI schedule shown · Peak tariff highlighted</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge b-amber" id="pump-count-badge">—</span>
+        <button class="btn-ghost" onclick="resetPumps()">↺ AI Schedule</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="pump-list" id="pump-list">
+        <div class="loading-state">Loading pump data…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div style="display:flex;flex-direction:column;gap:18px">
+
+    <!-- POWER SUMMARY -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Active Load Summary</div>
+      </div>
+      <div class="card-body">
+        <div class="power-display">
+          <div class="pd-main">
+            <div class="pd-label">Total Active Load</div>
+            <div class="pd-value" id="total-kw">0 kW</div>
+          </div>
+          <div class="pd-detail">
+            <div class="pd-row"><span>Cost / hour</span><strong id="cost-hr">₹0.00</strong></div>
+            <div class="pd-row"><span>Tariff rate</span><strong id="rate-now">—</strong></div>
+            <div class="pd-row"><span>Pumps running</span><strong id="pumps-running">0</strong></div>
+          </div>
+        </div>
+        <div class="ai-rec-box" id="ai-rec-box">
+          <span class="ai-rec-icon">💡</span>
+          <div class="ai-rec-text" id="ai-rec-text">Loading AI recommendation…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUMP TIMELINE -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Today's Pump Timeline</div>
+        <div class="card-sub">AI-scheduled windows</div>
+      </div>
+      <div class="card-body">
+        <div class="timeline" id="pump-timeline"></div>
+      </div>
+    </div>
+
+    <!-- SAVINGS BOX -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">AI Scheduling Savings</div>
+        <div class="card-sub">vs unoptimised operation</div>
+      </div>
+      <div class="card-body">
+        <div class="savings-grid">
+          <div class="saving-item">
+            <div class="si-val" style="color:var(--green)">₹9,640</div>
+            <div class="si-lbl">Saved this month</div>
+          </div>
+          <div class="saving-item">
+            <div class="si-val" style="color:var(--blue)">1,284</div>
+            <div class="si-lbl">kWh avoided</div>
+          </div>
+          <div class="saving-item">
+            <div class="si-val" style="color:var(--amber)">24%</div>
+            <div class="si-lbl">Over-pump reduction</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ENERGY CHART -->
+<div class="card">
+  <div class="card-head">
+    <div>
+      <div class="card-title">Hourly Energy Consumption · Today</div>
+      <div class="card-sub">Pump load vs tariff window — shaded by rate tier</div>
+    </div>
+    <span class="badge b-amber">kWh/hr</span>
+  </div>
+  <div class="card-body">
+    <div class="chart-wrap" style="height:200px">
+      <canvas id="energyChart"></canvas>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pumps.js') }}"></script>
+{% endblock %}

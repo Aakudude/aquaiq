@@ -1,0 +1,182 @@
+{% extends "layout.html" %}
+{% block title %}Forecast{% endblock %}
+{% block page_title %}Demand Forecast{% endblock %}
+{% block page_sub %}XGBoost prediction · Confidence bands · What-if simulation{% endblock %}
+
+{% block content %}
+
+<!-- FORECAST METRIC STRIP -->
+<div class="metric-strip" id="forecast-metrics">
+  <div class="metric-pill">
+    <div class="mp-label">Today</div>
+    <div class="mp-val" id="fc-today" style="color:var(--blue)">—</div>
+    <div class="mp-unit">kL</div>
+  </div>
+  <div class="mp-divider"></div>
+  <div class="metric-pill">
+    <div class="mp-label">7-Day Total</div>
+    <div class="mp-val" id="fc-week" style="color:var(--green)">—</div>
+    <div class="mp-unit">kL</div>
+  </div>
+  <div class="mp-divider"></div>
+  <div class="metric-pill">
+    <div class="mp-label">Peak Day</div>
+    <div class="mp-val" id="fc-peak" style="color:var(--amber)">—</div>
+    <div class="mp-unit">kL</div>
+  </div>
+  <div class="mp-divider"></div>
+  <div class="metric-pill">
+    <div class="mp-label">Lowest Day</div>
+    <div class="mp-val" id="fc-low" style="color:var(--purple)">—</div>
+    <div class="mp-unit">kL</div>
+  </div>
+  <div class="mp-divider"></div>
+  <div class="metric-pill">
+    <div class="mp-label">Model Acc.</div>
+    <div class="mp-val" style="color:var(--cyan)">99.1%</div>
+    <div class="mp-unit">daily</div>
+  </div>
+</div>
+
+<!-- MAIN FORECAST CHART -->
+<div class="card">
+  <div class="card-head">
+    <div>
+      <div class="card-title">Water Demand Forecast — 7 Days</div>
+      <div class="card-sub">Shaded area = 95% confidence interval · Dashed = baseline over-pumping level</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="legend-pill"><div class="lp-swatch band-swatch"></div>95% CI Band</div>
+      <div class="tabs" id="fc-tabs">
+        <button class="tab on" data-mode="daily">Daily</button>
+        <button class="tab" data-mode="hourly">Hourly</button>
+        <button class="tab" data-mode="realvspred">Real vs Pred</button>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="chart-wrap" style="height:280px">
+      <canvas id="forecastChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- SCENARIO + HISTORICAL -->
+<div class="row-12">
+
+  <!-- WHAT-IF SIMULATOR -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">🧪 What-If Simulator</div>
+        <div class="card-sub">Adjust inputs · see ML demand response</div>
+      </div>
+      <span class="badge b-purple">INTERACTIVE</span>
+    </div>
+    <div class="card-body">
+      <div class="sim-inputs">
+
+        <div class="sim-row">
+          <div class="sim-row-head">
+            <span class="sim-label">🌡 Temperature</span>
+            <span class="sim-val" id="sv-temp">34°C</span>
+          </div>
+          <input type="range" class="sim-slider" id="ss-temp" min="20" max="45" value="34" step="1">
+        </div>
+
+        <div class="sim-row">
+          <div class="sim-row-head">
+            <span class="sim-label">🌧 Rainfall</span>
+            <span class="sim-val" id="sv-rain">0 mm</span>
+          </div>
+          <input type="range" class="sim-slider green" id="ss-rain" min="0" max="50" value="0" step="1">
+        </div>
+
+        <div class="sim-row">
+          <div class="sim-row-head">
+            <span class="sim-label">👥 Campus Occupancy</span>
+            <span class="sim-val" id="sv-occ">85%</span>
+          </div>
+          <input type="range" class="sim-slider amber" id="ss-occ" min="10" max="100" value="85" step="1">
+        </div>
+
+        <div class="sim-row">
+          <div class="sim-row-head">
+            <span class="sim-label">📅 Day Type</span>
+            <span class="sim-val" id="sv-day">Weekday</span>
+          </div>
+          <input type="range" class="sim-slider" id="ss-day" min="0" max="2" value="0" step="1">
+        </div>
+
+      </div>
+
+      <div class="sim-result" id="sim-result">
+        <div class="sim-result-main">Predicted: <span id="sim-demand">1,847</span> kL</div>
+        <div class="sim-delta" id="sim-delta">Baseline — no change</div>
+        <div class="sim-badges" id="sim-badges"></div>
+        <div class="sim-reasoning" id="sim-reasoning"></div>
+      </div>
+
+      <button class="btn-ghost full-width" onclick="resetSim()">↺ Reset to current conditions</button>
+    </div>
+  </div>
+
+  <!-- HISTORICAL CHART -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Historical Consumption · 30 Days</div>
+        <div class="card-sub">Zone breakdown · stacked view</div>
+      </div>
+      <span class="badge b-green">STACKED</span>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap" style="height:320px">
+        <canvas id="histChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODEL PERF -->
+<div class="row-2">
+  <div class="card">
+    <div class="card-head">
+      <div><div class="card-title">ML Model Performance</div><div class="card-sub">XGBoost · 2yr training · 15-min intervals</div></div>
+      <span class="badge b-green">v2.4 PROD</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-3col">
+        <div class="metric-box"><div class="metric-num" style="color:var(--blue)">99.1%</div><div class="metric-lbl">DAILY ACC</div></div>
+        <div class="metric-box"><div class="metric-num" style="color:var(--green)">0.9%</div><div class="metric-lbl">MAPE</div></div>
+        <div class="metric-box"><div class="metric-num" style="color:var(--amber)">5.9</div><div class="metric-lbl">RMSE kL</div></div>
+      </div>
+      <div class="chart-wrap" style="height:130px;margin-top:14px"><canvas id="accChart"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head">
+      <div><div class="card-title">Hourly Model Performance</div><div class="card-sub">24-hour granularity forecast</div></div>
+      <span class="badge b-blue">HOURLY</span>
+    </div>
+    <div class="card-body">
+      <div class="metric-3col">
+        <div class="metric-box"><div class="metric-num" style="color:var(--blue)">96.7%</div><div class="metric-lbl">HOURLY ACC</div></div>
+        <div class="metric-box"><div class="metric-num" style="color:var(--green)">3.25%</div><div class="metric-lbl">MAPE</div></div>
+        <div class="metric-box"><div class="metric-num" style="color:var(--amber)">0.89</div><div class="metric-lbl">RMSE kL/hr</div></div>
+      </div>
+      <div class="model-info">
+        <strong>Features:</strong> Hour · Day-of-week · Month · Temperature · Rainfall · Occupancy · Prev-day usage · Rolling-7d · Holiday flag · sin/cos cyclical encoding<br>
+        <strong>Training:</strong> 2024-01-01 → 2025-12-31 · 8 zones · 105,120 rows<br>
+        <strong>Retrains:</strong> Weekly · Drift detection active
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/forecast.js') }}"></script>
+{% endblock %}

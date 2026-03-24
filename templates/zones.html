@@ -1,0 +1,84 @@
+{% extends "layout.html" %}
+{% block title %}Zones{% endblock %}
+{% block page_title %}Zone Insights{% endblock %}
+{% block page_sub %}Campus-wide demand breakdown · Zone-level forecasting{% endblock %}
+
+{% block content %}
+
+<!-- ZONE CARDS STRIP -->
+<div class="zone-card-strip" id="zone-card-strip">
+  <div class="loading-state">Loading zone data…</div>
+</div>
+
+<!-- CHART + TABLE -->
+<div class="row-21">
+
+  <!-- BREAKDOWN CHART -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Zone Demand · 7-Day Trend</div>
+        <div class="card-sub">Predicted kL per zone · historical comparison</div>
+      </div>
+      <div class="tabs" id="zone-tabs">
+        <button class="tab on" data-mode="bar">Bar</button>
+        <button class="tab" data-mode="line">Trend</button>
+        <button class="tab" data-mode="pie">Share</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap" style="height:280px">
+        <canvas id="zoneChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZONE TABLE -->
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="card-title">Zone Breakdown · Tomorrow</div>
+        <div class="card-sub">Predicted demand vs yesterday</div>
+      </div>
+      <span class="badge b-blue">NEXT 24H</span>
+    </div>
+    <div class="card-body" style="padding:0">
+      <table class="data-table" id="zone-table">
+        <thead>
+          <tr>
+            <th>Zone</th>
+            <th>Forecast kL</th>
+            <th>vs Yesterday</th>
+            <th>Share</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="4" class="loading-state">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- HISTORICAL ZONE STACKED -->
+<div class="card">
+  <div class="card-head">
+    <div>
+      <div class="card-title">Historical Zone Consumption · Last 30 Days</div>
+      <div class="card-sub">Stacked by campus zone · kL / day</div>
+    </div>
+    <span class="badge b-green">30D</span>
+  </div>
+  <div class="card-body">
+    <div class="chart-wrap" style="height:220px">
+      <canvas id="zoneHistChart"></canvas>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/zones.js') }}"></script>
+{% endblock %}
